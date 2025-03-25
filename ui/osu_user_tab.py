@@ -41,10 +41,10 @@ class OsuUserTab(ttk.Frame):
             messagebox.showerror("Authentication Failed", f"Could not authenticate with osu! API: {str(e)}")
 
     def create_widgets(self):
-        search_frame = ttk.LabelFrame(self, text="osu! Player Search")
+        search_frame = ttk.LabelFrame(self, text="Tìm kiếm trên osu!")
         search_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        ttk.Label(search_frame, text="Username or ID:").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(search_frame, text="Username hoặc ID:").grid(row=0, column=0, padx=5, pady=5)
         
         self.search_var = tk.StringVar()
         self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=30)
@@ -62,7 +62,7 @@ class OsuUserTab(ttk.Frame):
 
     def create_player_info_tab(self):
         self.results_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.results_frame, text="Player Info")
+        self.notebook.add(self.results_frame, text="Thông tin người chơi")
 
         self.avatar_label = ttk.Label(self.results_frame)
         self.avatar_label.grid(row=0, column=0, rowspan=5, padx=10, pady=10)
@@ -84,7 +84,7 @@ class OsuUserTab(ttk.Frame):
 
         self.profile_btn = ttk.Button(
             btn_frame,
-            text="View Full Profile",
+            text="Xem Profile Đầy Đủ",
             command=self.open_profile,
             state=tk.DISABLED
         )
@@ -92,7 +92,7 @@ class OsuUserTab(ttk.Frame):
 
         self.export_btn = ttk.Button(
             btn_frame,
-            text="Export User Data",
+            text="Xuất Thông Tin Người Chơi (JSON)",
             command=self.export_user_data,
             state=tk.DISABLED
         )
@@ -114,7 +114,7 @@ class OsuUserTab(ttk.Frame):
 
     def create_recent_beatmaps_tab(self):
         self.recent_beatmaps_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.recent_beatmaps_frame, text="Recent Beatmaps")
+        self.notebook.add(self.recent_beatmaps_frame, text="Beatmaps gần đây")
 
         self.recent_beatmaps_tree = ttk.Treeview(self.recent_beatmaps_frame, 
             columns=("Beatmap", "Difficulty", "PP", "Accuracy", "Score", "Date"), 
@@ -180,7 +180,7 @@ class OsuUserTab(ttk.Frame):
 
         query = self.search_var.get().strip()
         if not query:
-            messagebox.showwarning("Warning", "Please enter a username or ID")
+            messagebox.showwarning("Warning", "Yêu cầu có username hoặc ID")
             return
 
         try:
@@ -202,7 +202,7 @@ class OsuUserTab(ttk.Frame):
 
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
-                messagebox.showerror("Error", "User not found")
+                messagebox.showerror("Error", "Không tìm thấy người chơi")
             else:
                 messagebox.showerror("API Error", f"Error fetching user data: {str(e)}")
         except Exception as e:
@@ -238,9 +238,8 @@ class OsuUserTab(ttk.Frame):
                 created_at = score.get('created_at')
                 if created_at:
                     try:
-                        normalized_datetime = re.sub(r'(\d{4})-(\d)-(\d{2})', r'\1-0\2-\3', created_at)
-                        normalized_datetime = normalized_datetime.replace('Z', '')
-                        date_str = datetime.fromisoformat(normalized_datetime).strftime("%Y-%m-%d %H:%M")
+                        created_at = created_at.replace('Z', '+00:00') 
+                        date_str = datetime.fromisoformat(created_at).strftime("%Y-%m-%d %H:%M")
                     except ValueError:
                         date_str = "N/A"
                 else:
