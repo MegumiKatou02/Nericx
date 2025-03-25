@@ -1,7 +1,7 @@
 import pygame
 import os
-from datetime import datetime
 from mutagen.mp3 import MP3
+from mutagen.oggvorbis import OggVorbis
 
 class MusicPlayer:
     def __init__(self):
@@ -34,12 +34,21 @@ class MusicPlayer:
                 beatmapset_id = song_folder.split(" ")[0] if " " in song_folder else None
                 
                 mp3_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.mp3')]
+                audio_files = [
+                    f for f in os.listdir(folder_path)
+                    if f.lower().endswith('.mp3') or f.lower() == "audio.ogg"
+                ]
                 
-                if mp3_files:
-                    for mp3 in mp3_files:
+                if audio_files:
+                    for audio_file  in audio_files:
                         # song_name = f"{' '.join(song_folder.split(' ')[1:])} - {os.path.splitext(mp3)[0]}"
-                        song_path = os.path.join(folder_path, mp3)
-                        audio = MP3(song_path)
+                        song_path = os.path.join(folder_path, audio_file)
+                        
+                        if audio_file.lower().endswith('.mp3'):
+                            audio = MP3(song_path)
+                        else:
+                            audio = OggVorbis(song_path)
+
                         duration = int(audio.info.length)
 
                         minutes = duration // 60
