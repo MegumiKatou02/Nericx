@@ -1,3 +1,5 @@
 pygame
 pypresence
 mutagen
+requests
+pillow

@@ -7,7 +7,6 @@ from PIL import Image, ImageTk
 import io
 import json
 import config.config
-import re
 
 class OsuUserTab(ttk.Frame):
     def __init__(self, master, db_manager, app, *args, **kwargs):

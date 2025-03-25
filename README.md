@@ -7,6 +7,7 @@ Nericx is an application that allows you to back up osu! data (replays, scores, 
 ## Features
 - Backup and restore osu! data (replays, scores, beatmaps, etc.)
 - Integrate with osu! to play music
+- View osu! profile (beatmaps, pp, recent play, etc.)
 - User-friendly interface
 
 ## Installation
