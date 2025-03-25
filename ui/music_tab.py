@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 from utils.music_player import MusicPlayer
 from datetime import datetime
+from pypresence import Presence
+import time
+
 
 class MusicTab(ttk.Frame):
     def __init__(self, master, db_manager, app, *args, **kwargs):
@@ -10,7 +13,8 @@ class MusicTab(ttk.Frame):
         self.app = app
         self.music_player = MusicPlayer()
         self.discord_available = False
-        self.setup_discord()
+        self.rpc = None
+        self.setup_discord_rpc()
         self.create_widgets()
         self.update_state()
     
@@ -23,6 +27,16 @@ class MusicTab(ttk.Frame):
             self.discord_available = True
         except Exception as e:
             print(f"Discord SDK không khả dụng: {e}")
+
+    def setup_discord_rpc(self):
+        try:
+            self.rpc = Presence("1353779001147003033")
+            self.rpc.connect()
+            self.discord_available = True
+            print("Kết nối Discord RPC thành công")
+        except Exception as e:
+            print(f"Không thể kết nối Discord RPC: {e}")
+            self.discord_available = False
     
     def create_widgets(self):
         self.warning_label = ttk.Label(self, text="Vui lòng cấu hình đường dẫn Osu! trong tab Chung trước", foreground='red')
@@ -138,29 +152,41 @@ class MusicTab(ttk.Frame):
                 self.songs_listbox.see(selection[0])
                 
                 if self.discord_available:
-                    self.update_discord_status(song["name"])
+                    self.update_discord_status(song["name"], song["beatmapset_id"])
             else:
                 tk.messagebox.showerror("Lỗi", f"Không thể phát bài hát:\n{result}")
     
-    def update_discord_status(self, song_name):
+    def update_discord_status(self, song_name, beatmapset_id=None):
+        if not self.discord_available:
+            return
+
         try:
-            import discordsdk
-            activity = discordsdk.Activity()
-            activity.state = "Đang nghe nhạc qua Nericx"
-            activity.details = song_name
-            activity.timestamps.start = int(datetime.now().timestamp())
-            
-            self.activity_manager.update_activity(activity, lambda result: print(f"Kết quả: {result}"))
-            self.discord_status_label.config(text="Đang chia sẻ nhạc")
-            
-            def discord_callback():
-                if self.discord_available and self.music_player.playing:
-                    self.discord.run_callbacks()
-                    self.after(1000, discord_callback)
-            
-            discord_callback()
+            buttons = []
+            if beatmapset_id:
+                buttons.append({
+                    "label": "Xem Beatmap trên osu!", 
+                    "url": f"https://osu.ppy.sh/beatmapsets/{beatmapset_id}"
+                })
+
+            update_data = {
+                "details": f"{song_name}",
+                "state": "Nghe nhạc trong Nerice",
+                "start": int(time.time()),
+
+                "large_text": song_name[:128],
+            }
+
+            if buttons:
+                update_data["buttons"] = buttons  
+
+            self.rpc.update(**update_data)
         except Exception as e:
-            print(f"Lỗi Discord RPC: {e}")
+            print(f"Lỗi cập nhật Discord RPC: {e}")
+
+
+    def on_close(self):
+        if self.rpc:
+            self.rpc.close()
     
     def toggle_play(self):
         if not self.music_player.current_track:
