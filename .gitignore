@@ -1,0 +1,13 @@
+osu_manager.db
+
+__pycache__/
+
+dist/
+
+build/
+
+*.spec
+
+config.py
+
+icon.ico
