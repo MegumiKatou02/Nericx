@@ -208,6 +208,9 @@ class MusicTab(ttk.Frame):
     def remove_duration(self, song_name: str) -> str:
         return re.sub(r' - \d{1,2}:\d{2}$', '', song_name)
     
+    def remove_copy_suffix(self, song_name: str) -> str:
+        return re.sub(r' - copy$', '', song_name, flags=re.IGNORECASE)
+    
     def update_discord_status(self, song_name, beatmapset_id=None):
         if not self.discord_available:
             return
@@ -221,6 +224,7 @@ class MusicTab(ttk.Frame):
                 })
 
             song_name = self.remove_duration(song_name)
+            song_name = self.remove_copy_suffix(song_name)
 
             update_data = {
                 "details": f"{song_name}",
