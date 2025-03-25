@@ -55,6 +55,8 @@ class NericxStyle:
         style.configure('TScrollbar', background=NericxTheme.LIGHT_BACKGROUND, borderwidth=0, arrowsize=12)
         style.map('TScrollbar', background=[('active', NericxTheme.PRIMARY)])
         
+        style.configure('Treeview', background=NericxTheme.LIGHT_BACKGROUND, fieldbackground=NericxTheme.LIGHT_BACKGROUND,
+                      foreground=NericxTheme.TEXT_LIGHT, borderwidth=0, padding=5)
         style.configure("TNotebook.Tab", font=("Segoe UI", 10)) 
         style.configure("TCheckbutton", font=("Segoe UI", 10))
         style.configure("TButton", font=("Segoe UI", 10))

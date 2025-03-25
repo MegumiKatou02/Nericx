@@ -4,6 +4,7 @@ from models.database import DatabaseManager
 from ui.general_tab import GeneralTab
 from ui.backup_tab import BackupTab
 from ui.music_tab import MusicTab
+from ui.osu_user_tab import OsuUserTab
 from themes.nericx_theme import NericxStyle
 
 class OsuManagerApp:
@@ -39,10 +40,12 @@ class OsuManagerApp:
         self.tab_general = GeneralTab(self.notebook, self.db_manager, self)
         self.tab_backup = BackupTab(self.notebook, self.db_manager, self)
         self.tab_music = MusicTab(self.notebook, self.db_manager, self)
+        self.tab_osu = OsuUserTab(self.notebook, self.db_manager, self)
         
         self.notebook.add(self.tab_general, text="Chung")
         self.notebook.add(self.tab_backup, text="Sao lưu")
         self.notebook.add(self.tab_music, text="Nhạc")
+        self.notebook.add(self.tab_osu, text="osu! Tracker")
     
     def load_saved_config(self):
         config = self.db_manager.load_config()
