@@ -228,6 +228,9 @@ class MusicTab(ttk.Frame):
                 "start": int(time.time()),
 
                 "large_text": song_name[:128],
+
+                "large_image": "image1",
+                "large_text": "Nericx",
             }
 
             if buttons:
