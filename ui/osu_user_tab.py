@@ -102,12 +102,17 @@ class OsuUserTab(ttk.Frame):
         self.scores_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.scores_frame, text="Top Scores")
 
-        self.scores_tree = ttk.Treeview(self.scores_frame, columns=("Beatmap", "Score", "PP", "Accuracy", "Rank"), show="headings")
+        self.scores_tree = ttk.Treeview(self.scores_frame, columns=("Beatmap", "Score", "PP", "Accuracy"), show="headings")
         self.scores_tree.heading("Beatmap", text="Beatmap")
         self.scores_tree.heading("Score", text="Score")
         self.scores_tree.heading("PP", text="PP")
         self.scores_tree.heading("Accuracy", text="Accuracy")
-        self.scores_tree.heading("Rank", text="Rank")
+
+        self.scores_tree.column("Beatmap", width=200)
+        self.scores_tree.column("Score", width=100)
+        self.scores_tree.column("PP", width=80)
+        self.scores_tree.column("Accuracy", width=80)
+
         self.scores_tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         self.scores_tree.bind("<Double-1>", self.open_beatmap_from_top_scores)
@@ -239,7 +244,7 @@ class OsuUserTab(ttk.Frame):
                 if created_at:
                     try:
                         created_at = created_at.replace('Z', '+00:00') 
-                        date_str = datetime.fromisoformat(created_at).strftime("%Y-%m-%d %H:%M")
+                        date_str = datetime.fromisoformat(created_at).strftime("%d-%m-%Y %H:%M")
                     except ValueError:
                         date_str = "N/A"
                 else:
@@ -345,7 +350,6 @@ class OsuUserTab(ttk.Frame):
                     f"{score.get('score', 0):,}",
                     f"{score.get('pp', 0):.2f}",
                     f"{score.get('accuracy', 0) * 100:.2f}%",
-                    score.get('rank', 'N/A')
                 ))
         except Exception as e:
             print(f"Error getting scores: {e}")
