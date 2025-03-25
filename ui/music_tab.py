@@ -4,7 +4,9 @@ from utils.music_player import MusicPlayer
 from datetime import datetime
 from pypresence import Presence
 import time
-
+import pygame
+import config.config
+import re
 
 class MusicTab(ttk.Frame):
     def __init__(self, master, db_manager, app, *args, **kwargs):
@@ -17,6 +19,53 @@ class MusicTab(ttk.Frame):
         self.setup_discord_rpc()
         self.create_widgets()
         self.update_state()
+        
+        self.auto_next_cooldown = False
+        self.after(2000, self.check_music_end)
+
+    def check_music_end(self):
+        try:
+            if not self.auto_next_cooldown:
+                if not pygame.mixer.music.get_busy() and self.music_player.playing:
+                    success, next_track = self.music_player.play_next()
+                    
+                    if success and next_track:
+                        self.auto_next_cooldown = True
+                        self.after(2000, self.reset_auto_next_cooldown)
+                        
+                        try:
+                            current_track_name = self.music_player.current_track["name"]
+                            
+                            for i in range(self.songs_listbox.size()):
+                                self.songs_listbox.itemconfig(i, {'bg': '#36393F', 'fg': 'white'})
+                            
+                            for i in range(self.songs_listbox.size()):
+                                if self.songs_listbox.get(i) == current_track_name:
+                                    self.songs_listbox.selection_clear(0, tk.END)
+                                    self.songs_listbox.selection_set(i)
+                                    self.songs_listbox.see(i)
+                                    self.songs_listbox.itemconfig(i, {'bg': '#7289DA', 'fg': 'white'})
+                                    break
+                            
+                            self.current_track_label.config(text=current_track_name)
+                            self.play_btn.config(text="Tạm dừng")
+                            
+                            if self.discord_available:
+                                self.update_discord_status(current_track_name, 
+                                    self.music_player.current_track.get("beatmapset_id"))
+                        
+                        except Exception as e:
+                            print(f"Error updating UI for next track: {e}")
+        except Exception as e:
+            print(f"Error in check_music_end: {e}")
+        
+        try:
+            self.after(1000, self.check_music_end)
+        except Exception as e:
+            print(f"Error scheduling next music end check: {e}")
+    
+    def reset_auto_next_cooldown(self):
+        self.auto_next_cooldown = False
     
     def setup_discord(self):
         try:
@@ -30,7 +79,7 @@ class MusicTab(ttk.Frame):
 
     def setup_discord_rpc(self):
         try:
-            self.rpc = Presence("1353779001147003033")
+            self.rpc = Presence(f"{config.config.DISCORD_CLIENT_ID}")
             self.rpc.connect()
             self.discord_available = True
             print("Kết nối Discord RPC thành công")
@@ -155,6 +204,9 @@ class MusicTab(ttk.Frame):
                     self.update_discord_status(song["name"], song["beatmapset_id"])
             else:
                 tk.messagebox.showerror("Lỗi", f"Không thể phát bài hát:\n{result}")
+
+    def remove_duration(self, song_name: str) -> str:
+        return re.sub(r' - \d{1,2}:\d{2}$', '', song_name)
     
     def update_discord_status(self, song_name, beatmapset_id=None):
         if not self.discord_available:
@@ -168,9 +220,11 @@ class MusicTab(ttk.Frame):
                     "url": f"https://osu.ppy.sh/beatmapsets/{beatmapset_id}"
                 })
 
+            song_name = self.remove_duration(song_name)
+
             update_data = {
                 "details": f"{song_name}",
-                "state": "Nghe nhạc trong Nerice",
+                "state": "Nghe nhạc trong Nericx",
                 "start": int(time.time()),
 
                 "large_text": song_name[:128],
@@ -219,6 +273,15 @@ class MusicTab(ttk.Frame):
                     self.discord_status_label.config(text="Không hoạt động")
                 except Exception as e:
                     print(f"Lỗi Discord RPC: {e}")
+
+            if self.discord_available and self.rpc:
+                try:
+                    self.rpc.clear()
+                    self.discord_status_label.config(text="Không hoạt động")
+                    print("Đã tắt Discord Rich Presence")
+                except Exception as e:
+                    print(f"Lỗi khi tắt Discord RPC: {e}")
+
     
     def update_state(self):
         osu_path = self.app.get_osu_path()
