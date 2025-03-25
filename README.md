@@ -48,7 +48,7 @@ pyinstaller --onefile --windowed --icon=icon.ico --name "Nericx" \
 ```
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 Contributions are welcome! Feel free to open issues and submit pull requests.
