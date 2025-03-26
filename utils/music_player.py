@@ -35,7 +35,22 @@ class MusicPlayer:
             if os.path.isdir(folder_path):
                 beatmapset_id = song_folder.split(" ")[0] if " " in song_folder else None
                 
-                mp3_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.mp3')]
+                image_files = [
+                    f for f in os.listdir(folder_path) 
+                    if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+                ]
+
+                background_images = [
+                    f for f in image_files 
+                    if any(bg in f.lower() for bg in ['bg', 'background'])
+                ]
+
+                image_path = None
+                if background_images:
+                    image_path = os.path.join(folder_path, background_images[0])
+                elif image_files:
+                    image_path = os.path.join(folder_path, image_files[0])
+
                 audio_files = [
                     f for f in os.listdir(folder_path)
                     if f.lower().endswith('.mp3') or f.lower() == "audio.ogg"
@@ -61,7 +76,8 @@ class MusicPlayer:
                         self.songs_data.append({
                             "name": song_name,
                             "path": song_path,
-                            "beatmapset_id": beatmapset_id
+                            "beatmapset_id": beatmapset_id,
+                            "image": image_path
                         })
                 # sort
                 self.songs_data.sort(key=lambda song: song["name"].lower())

@@ -1,12 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
 from utils.music_player import MusicPlayer
-from datetime import datetime
+import tkinter.messagebox as messagebox
 from pypresence import Presence
 import time
 import pygame
 import config.config
 import re
+import os
+from PIL import Image, ImageTk
 
 class MusicTab(ttk.Frame):
     def __init__(self, master, db_manager, app, *args, **kwargs):
@@ -128,9 +130,12 @@ class MusicTab(ttk.Frame):
         
         player_frame = ttk.LabelFrame(self.main_frame, text="Trình phát")
         player_frame.pack(fill='x', padx=10, pady=10)
+
+        controls_container = ttk.Frame(player_frame)
+        controls_container.pack(fill='x', padx=10, pady=10)
         
-        controls_frame = ttk.Frame(player_frame)
-        controls_frame.pack(padx=10, pady=10)
+        controls_frame = ttk.Frame(controls_container)
+        controls_frame.pack(side=tk.LEFT, fill='y')
 
         self.play_btn = ttk.Button(controls_frame, text="Phát", command=self.toggle_play)
         self.play_btn.pack(side=tk.LEFT, padx=5)
@@ -151,7 +156,17 @@ class MusicTab(ttk.Frame):
             command=self.toggle_discord_connection,
         )
         self.discord_toggle_btn.pack(side=tk.LEFT, padx=5)
+
+        self.cover_image_label = ttk.Label(controls_container)
+        self.cover_image_label.pack(side=tk.RIGHT, padx=10)
         
+        self.cover_image_label.bind("<Button-1>", 
+            lambda e: self.show_fullsize_image(
+                self.music_player.current_track["image"] 
+                if self.music_player.current_track else None
+            )
+        )
+
         info_frame = ttk.Frame(player_frame)
         info_frame.pack(fill='x', padx=10, pady=10)
         
@@ -166,6 +181,64 @@ class MusicTab(ttk.Frame):
             ttk.Label(discord_frame, text="Trạng thái Discord:").grid(row=0, column=0, sticky='w')
             self.discord_status_label = ttk.Label(discord_frame, text="Đã kết nối")
             self.discord_status_label.grid(row=0, column=1, sticky='w', padx=5)
+
+    
+    def show_fullsize_image(self, image_path):
+        if not image_path or not os.path.exists(image_path):
+            messagebox.showwarning("Cảnh báo", "Không tìm thấy ảnh")
+            return
+        
+        try:
+            window_width, window_height = 800, 600
+            image_window = tk.Toplevel(self)
+            image_window.title("Ảnh bìa bài hát")
+            image_window.geometry(f"{window_width}x{window_height}")
+            image_window.configure(bg="black")
+            # image_window.overrideredirect(True)
+            image_window.iconbitmap("") 
+            image_window.resizable(False, False)
+
+            img = Image.open(image_path)
+            img_width, img_height = img.size
+
+            scale = min(window_width / img_width, window_height / img_height)
+            new_width = int(img_width * scale)
+            new_height = int(img_height * scale)
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            photo = ImageTk.PhotoImage(resized_img)
+
+            canvas = tk.Canvas(image_window, width=window_width, height=window_height, bg="black", highlightthickness=0)
+            canvas.pack(fill=tk.BOTH, expand=True)
+
+            img_id = canvas.create_image(window_width // 2, window_height // 2, image=photo, anchor=tk.CENTER)
+
+            canvas.image = photo
+
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Không thể mở ảnh: {str(e)}")
+
+    def update_cover_image(self, image_path=None):
+        if not image_path or not os.path.exists(image_path):
+            self.cover_image_label.config(image='', text='Không có ảnh')
+            self.cover_image_label.image = None
+            return
+
+        try:
+            img = Image.open(image_path)
+            original_width, original_height = img.size
+            scale = min(100 / original_width, 50 / original_height)
+    
+            new_width = int(original_width * scale)
+            new_height = int(original_height * scale)
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+            
+            self.cover_image_label.config(image=photo)
+            self.cover_image_label.image = photo 
+        except Exception as e:
+            print(f"Lỗi tải ảnh: {e}")
+            self.cover_image_label.config(image='', text='Lỗi tải ảnh')
 
     def toggle_play_mode(self):
         self.shuffle_mode = not self.shuffle_mode
@@ -269,6 +342,8 @@ class MusicTab(ttk.Frame):
                 
                 self.songs_listbox.itemconfig(selection[0], {'bg': '#7289DA', 'fg': 'white'})
                 self.songs_listbox.see(selection[0])
+
+                self.update_cover_image(song.get("image"))
                 
                 if self.discord_available:
                     self.update_discord_status(song["name"], song["beatmapset_id"])
@@ -343,6 +418,7 @@ class MusicTab(ttk.Frame):
         if success:
             self.play_btn.config(text="Phát")
             self.current_track_label.config(text="Không có bài nào")
+            self.update_cover_image()
         
             if self.discord_available and self.rpc:
                 try:
