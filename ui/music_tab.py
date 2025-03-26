@@ -13,12 +13,12 @@ class MusicTab(ttk.Frame):
         super().__init__(master, *args, **kwargs)
         self.db_manager = db_manager
         self.app = app
+
+        self.shuffle_mode = False
+
         self.music_player = MusicPlayer()
         self.discord_available = False
         self.rpc = None
-  
-        self.shuffle_mode = False
-        self.continuous_mode = True
   
         self.setup_discord_rpc()
         self.create_widgets()
@@ -123,6 +123,7 @@ class MusicTab(ttk.Frame):
         self.songs_listbox.pack(side=tk.LEFT, fill='both', expand=True)
         scrollbar.config(command=self.songs_listbox.yview)
         
+        self.songs_listbox.bind('<Return>', self.play_selected_song)
         self.songs_listbox.bind("<Double-1>", self.play_selected_song)
         
         player_frame = ttk.LabelFrame(self.main_frame, text="Trình phát")

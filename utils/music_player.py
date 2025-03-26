@@ -19,6 +19,7 @@ class MusicPlayer:
         self.songs_data = []
         self.filtered_songs = []
         self.current_index = -1
+        self.shuffle_mode = False
         pygame.mixer.music.set_endevent(pygame.USEREVENT)
     
     def load_songs(self, osu_path):
