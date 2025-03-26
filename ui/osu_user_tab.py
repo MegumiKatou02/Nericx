@@ -22,6 +22,8 @@ class OsuUserTab(ttk.Frame):
 
     def authenticate(self):
         try:
+            requests.get("https://www.google.com", timeout=5)
+            
             auth_url = "https://osu.ppy.sh/oauth/token"
             data = {
                 "client_id": config.config.OSU_CLIENT_ID,
@@ -29,15 +31,23 @@ class OsuUserTab(ttk.Frame):
                 "grant_type": "client_credentials",
                 "scope": "public"
             }
-            response = requests.post(auth_url, data=data)
+            
+            response = requests.post(auth_url, data=data, timeout=10)
             response.raise_for_status()
             
             token_data = response.json()
             self.access_token = token_data["access_token"]
             self.token_expires = datetime.now().timestamp() + token_data["expires_in"]
-            print("Authenticated successfully with osu! API v2")
-        except Exception as e:
-            messagebox.showerror("Authentication Failed", f"Could not authenticate with osu! API: {str(e)}")
+            
+            self.network_error_label.grid_remove()
+            
+            return True
+
+        except requests.RequestException:
+            self.network_error_label.grid()
+            
+            self.access_token = None
+            return False
 
     def create_widgets(self):
         search_frame = ttk.LabelFrame(self, text="Tìm kiếm trên osu!")
@@ -46,12 +56,22 @@ class OsuUserTab(ttk.Frame):
         ttk.Label(search_frame, text="Username hoặc ID:").grid(row=0, column=0, padx=5, pady=5)
         
         self.search_var = tk.StringVar()
+        
         self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=30)
         self.search_entry.grid(row=0, column=1, padx=5, pady=5)
         self.search_entry.bind('<Return>', lambda event: self.search_user())
         
-        search_btn = ttk.Button(search_frame, text="Search", command=self.search_user)
-        search_btn.grid(row=0, column=2, padx=5, pady=5)
+        self.search_btn = ttk.Button(search_frame, text="Search", command=self.search_user)
+        self.search_btn.grid(row=0, column=2, padx=5, pady=5)
+
+        self.network_error_label = ttk.Label(
+            search_frame, 
+            text="Không có kết nối internet. Một số chức năng bị hạn chế.", 
+            foreground="red"
+        )
+        self.network_error_label.grid(row=1, column=0, columnspan=3, padx=5, pady=5)
+
+        self.network_error_label.grid_remove()
 
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
