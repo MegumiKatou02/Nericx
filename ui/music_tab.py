@@ -66,26 +66,20 @@ class MusicTab(ttk.Frame):
     
     def reset_auto_next_cooldown(self):
         self.auto_next_cooldown = False
-    
-    def setup_discord(self):
-        try:
-            import discordsdk
-            from config.config import DISCORD_CLIENT_ID
-            self.discord = discordsdk.Discord(DISCORD_CLIENT_ID, discordsdk.CreateFlags.default)
-            self.activity_manager = self.discord.get_activity_manager()
-            self.discord_available = True
-        except Exception as e:
-            print(f"Discord SDK không khả dụng: {e}")
 
     def setup_discord_rpc(self):
         try:
             self.rpc = Presence(f"{config.config.DISCORD_CLIENT_ID}")
             self.rpc.connect()
             self.discord_available = True
+            if hasattr(self, 'discord_toggle_btn'):
+                self.discord_toggle_btn.config(text="Tắt Discord")
             print("Kết nối Discord RPC thành công")
         except Exception as e:
             print(f"Không thể kết nối Discord RPC: {e}")
             self.discord_available = False
+            if hasattr(self, 'discord_toggle_btn'):
+                self.discord_toggle_btn.config(text="Bật Discord")
     
     def create_widgets(self):
         self.warning_label = ttk.Label(self, text="Vui lòng cấu hình đường dẫn Osu! trong tab Chung trước", foreground='red')
@@ -136,6 +130,13 @@ class MusicTab(ttk.Frame):
         self.play_btn.grid(row=0, column=0, padx=5)
         
         ttk.Button(controls_frame, text="Dừng", command=self.stop_music).grid(row=0, column=1, padx=5)
+
+        self.discord_toggle_btn = ttk.Button(
+            controls_frame, 
+            text="Tắt Discord", 
+            command=self.toggle_discord_connection
+        )
+        self.discord_toggle_btn.grid(row=0, column=2, padx=5)
         
         info_frame = ttk.Frame(player_frame)
         info_frame.pack(fill='x', padx=10, pady=10)
@@ -152,6 +153,38 @@ class MusicTab(ttk.Frame):
             self.discord_status_label = ttk.Label(discord_frame, text="Đã kết nối")
             self.discord_status_label.grid(row=0, column=1, sticky='w', padx=5)
     
+    def toggle_discord_connection(self):
+        if self.discord_available:
+            self.discord_available = False
+            if self.rpc:
+                try:
+                    self.rpc.close()
+                except Exception as e:
+                    print(f"Lỗi khi đóng kết nối Discord: {e}")
+                finally:
+                    self.rpc = None
+            self.discord_toggle_btn.config(text="Bật Discord")
+            if hasattr(self, 'discord_status_label'):
+                self.discord_status_label.config(text="Đã tắt")
+        else:
+            try:
+                self.rpc = Presence(f"{config.config.DISCORD_CLIENT_ID}")
+                self.rpc.connect()
+                self.discord_available = True
+                self.discord_toggle_btn.config(text="Tắt Discord")
+                if hasattr(self, 'discord_status_label'):
+                    self.discord_status_label.config(text="Đã kết nối")
+                
+                if self.music_player.playing and self.music_player.current_track:
+                    self.update_discord_status(
+                        self.music_player.current_track["name"],
+                        self.music_player.current_track.get("beatmapset_id")
+                    )
+            except Exception as e:
+                print(f"Không thể kết nối lại Discord: {e}")
+                self.discord_available = False
+                self.discord_toggle_btn.config(text="Bật Discord")
+
     def filter_songs(self, *args):
         search_term = self.search_var.get().lower()
         
@@ -212,7 +245,7 @@ class MusicTab(ttk.Frame):
         return re.sub(r' - copy$', '', song_name, flags=re.IGNORECASE)
     
     def update_discord_status(self, song_name, beatmapset_id=None):
-        if not self.discord_available:
+        if not self.discord_available or not self.rpc:
             return
 
         try:
@@ -273,19 +306,12 @@ class MusicTab(ttk.Frame):
         if success:
             self.play_btn.config(text="Phát")
             self.current_track_label.config(text="Không có bài nào")
-            
-            if self.discord_available:
-                try:
-                    self.activity_manager.clear_activity(lambda result: print(f"Kết quả xóa hoạt động: {result}"))
-                    self.discord_status_label.config(text="Không hoạt động")
-                except Exception as e:
-                    print(f"Lỗi Discord RPC: {e}")
-
+        
             if self.discord_available and self.rpc:
                 try:
                     self.rpc.clear()
-                    self.discord_status_label.config(text="Không hoạt động")
-                    print("Đã tắt Discord Rich Presence")
+                    if hasattr(self, 'discord_status_label'):
+                        self.discord_status_label.config(text="Không hoạt động")
                 except Exception as e:
                     print(f"Lỗi khi tắt Discord RPC: {e}")
 
