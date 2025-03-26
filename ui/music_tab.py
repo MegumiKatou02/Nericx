@@ -56,6 +56,8 @@ class MusicTab(ttk.Frame):
                             
                             self.current_track_label.config(text=current_track_name)
                             self.play_btn.config(text="Tạm dừng")
+
+                            self.update_cover_image(self.music_player.current_track.get("image"))
                             
                             if self.discord_available:
                                 self.update_discord_status(current_track_name, 
@@ -125,6 +127,7 @@ class MusicTab(ttk.Frame):
         self.songs_listbox.pack(side=tk.LEFT, fill='both', expand=True)
         scrollbar.config(command=self.songs_listbox.yview)
         
+        self.songs_listbox.bind('<Button-1>', self.show_song_image)
         self.songs_listbox.bind('<Return>', self.play_selected_song)
         self.songs_listbox.bind("<Double-1>", self.play_selected_song)
         
@@ -162,8 +165,7 @@ class MusicTab(ttk.Frame):
         
         self.cover_image_label.bind("<Button-1>", 
             lambda e: self.show_fullsize_image(
-                self.music_player.current_track["image"] 
-                if self.music_player.current_track else None
+                None  
             )
         )
 
@@ -182,20 +184,44 @@ class MusicTab(ttk.Frame):
             self.discord_status_label = ttk.Label(discord_frame, text="Đã kết nối")
             self.discord_status_label.grid(row=0, column=1, sticky='w', padx=5)
 
+
+    def show_song_image(self, event):
+        index = self.songs_listbox.nearest(event.y)
+        
+        if 0 <= index < self.songs_listbox.size():
+            song_name = self.songs_listbox.get(index)
+            
+            song = None
+            for s in self.music_player.songs_data:
+                if s["name"] == song_name:
+                    song = s
+                    break
+            
+            if song and song.get("image"):
+                self.update_cover_image(song.get("image"))
     
     def show_fullsize_image(self, image_path):
+        if not image_path:
+            selection = self.songs_listbox.curselection()
+            if selection:
+                song_name = self.songs_listbox.get(selection[0])
+                for song in self.music_player.songs_data:
+                    if song["name"] == song_name:
+                        image_path = song.get("image")
+                        break
+
         if not image_path or not os.path.exists(image_path):
-            messagebox.showwarning("Cảnh báo", "Không tìm thấy ảnh")
+            messagebox.showwarning("Cảnh báo", "Không tìcover_image_label.bindm thấy ảnh")
             return
         
         try:
             window_width, window_height = 800, 600
             image_window = tk.Toplevel(self)
-            image_window.title("Ảnh bìa bài hát")
+            image_window.title("Ảnh bài hát")
             image_window.geometry(f"{window_width}x{window_height}")
             image_window.configure(bg="black")
             # image_window.overrideredirect(True)
-            image_window.iconbitmap("") 
+            image_window.iconbitmap("icon.ico") 
             image_window.resizable(False, False)
 
             img = Image.open(image_path)
