@@ -48,6 +48,7 @@ class OsuUserTab(ttk.Frame):
         self.search_var = tk.StringVar()
         self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=30)
         self.search_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.search_entry.bind('<Return>', lambda event: self.search_user())
         
         search_btn = ttk.Button(search_frame, text="Search", command=self.search_user)
         search_btn.grid(row=0, column=2, padx=5, pady=5)
