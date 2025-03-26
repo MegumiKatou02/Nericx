@@ -2,6 +2,7 @@ import pygame
 import os
 from mutagen.mp3 import MP3
 from mutagen.oggvorbis import OggVorbis
+import random
 
 class MusicPlayer:
     def __init__(self):
@@ -88,16 +89,27 @@ class MusicPlayer:
                 return i
         return -1
     
+    def set_playback_mode(self, shuffle=False):
+        self.shuffle_mode = shuffle
+    
     def play_next(self):
         if not self.filtered_songs:
             return False, "No songs available"
 
         if self.current_index == -1 and self.filtered_songs:
             self.current_index = 0
+        
+        if not self.shuffle_mode:
+            next_index = (self.current_index + 1) % len(self.filtered_songs)
+            next_song = self.filtered_songs[next_index]
+            return self.play_music(next_song, next_index)
+        else:
+            next_index = random.randint(0, len(self.filtered_songs) - 1)
+            while next_index == self.current_index and len(self.filtered_songs) > 1:
+                next_index = random.randint(0, len(self.filtered_songs) - 1)
 
-        next_index = (self.current_index + 1) % len(self.filtered_songs)
-        next_song = self.filtered_songs[next_index]
-        return self.play_music(next_song, next_index)
+            next_song = self.filtered_songs[next_index]
+            return self.play_music(next_song, next_index)
     
     def check_music_end(self):
         for event in pygame.event.get():

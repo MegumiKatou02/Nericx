@@ -16,12 +16,17 @@ class MusicTab(ttk.Frame):
         self.music_player = MusicPlayer()
         self.discord_available = False
         self.rpc = None
+  
+        self.shuffle_mode = False
+        self.continuous_mode = True
+  
         self.setup_discord_rpc()
         self.create_widgets()
         self.update_state()
         
         self.auto_next_cooldown = False
         self.after(2000, self.check_music_end)
+
 
     def check_music_end(self):
         try:
@@ -125,18 +130,26 @@ class MusicTab(ttk.Frame):
         
         controls_frame = ttk.Frame(player_frame)
         controls_frame.pack(padx=10, pady=10)
-        
+
         self.play_btn = ttk.Button(controls_frame, text="Phát", command=self.toggle_play)
-        self.play_btn.grid(row=0, column=0, padx=5)
-        
-        ttk.Button(controls_frame, text="Dừng", command=self.stop_music).grid(row=0, column=1, padx=5)
+        self.play_btn.pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(controls_frame, text="Dừng", command=self.stop_music).pack(side=tk.LEFT, padx=5)
+
+        self.mode_btn = ttk.Button(
+            controls_frame,
+            text="🔁", 
+            command=self.toggle_play_mode,
+            width=3 
+        )
+        self.mode_btn.pack(side=tk.LEFT, padx=5)
 
         self.discord_toggle_btn = ttk.Button(
             controls_frame, 
             text="Tắt Discord", 
-            command=self.toggle_discord_connection
+            command=self.toggle_discord_connection,
         )
-        self.discord_toggle_btn.grid(row=0, column=2, padx=5)
+        self.discord_toggle_btn.pack(side=tk.LEFT, padx=5)
         
         info_frame = ttk.Frame(player_frame)
         info_frame.pack(fill='x', padx=10, pady=10)
@@ -152,6 +165,29 @@ class MusicTab(ttk.Frame):
             ttk.Label(discord_frame, text="Trạng thái Discord:").grid(row=0, column=0, sticky='w')
             self.discord_status_label = ttk.Label(discord_frame, text="Đã kết nối")
             self.discord_status_label.grid(row=0, column=1, sticky='w', padx=5)
+
+    def toggle_play_mode(self):
+        self.shuffle_mode = not self.shuffle_mode
+        
+        if self.shuffle_mode:
+            self.mode_btn.config(text="🔀")
+            self.music_player.set_playback_mode(shuffle=True)
+        else:
+            self.mode_btn.config(text="🔁")
+            self.music_player.set_playback_mode(shuffle=False)
+        
+        mode = "Trộn bài" if self.shuffle_mode else "Liên tục"
+        self.current_track_label.config(text=f"Chế độ: {mode}", foreground="#43B581")
+        self.after(2000, lambda: self.update_current_track_display())
+
+    def update_current_track_display(self):
+        if self.music_player.current_track:
+            self.current_track_label.config(
+                text=self.music_player.current_track["name"],
+                foreground="white"
+            )
+        else:
+            self.current_track_label.config(text="Không có bài nào", foreground="white")
     
     def toggle_discord_connection(self):
         if self.discord_available:
