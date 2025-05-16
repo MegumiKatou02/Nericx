@@ -17,6 +17,7 @@ class MusicTab(ttk.Frame):
         self.app = app
 
         self.shuffle_mode = False
+        self.music_controls_visible = False
 
         self.music_player = MusicPlayer()
         self.discord_available = False
@@ -28,7 +29,9 @@ class MusicTab(ttk.Frame):
         
         self.auto_next_cooldown = False
         self.after(2000, self.check_music_end)
-
+        
+        self.progress_update_id = None
+        self.update_progress_timer()
 
     def check_music_end(self):
         try:
@@ -58,6 +61,11 @@ class MusicTab(ttk.Frame):
                             self.play_btn.config(text="Tạm dừng")
 
                             self.update_cover_image(self.music_player.current_track.get("image"))
+                            
+                            if self.music_controls_visible:
+                                current_time = "0:00"
+                                total_time = self.music_player.get_formatted_time(self.music_player.track_length)
+                                self.time_label.config(text=f"{current_time} / {total_time}")
                             
                             if self.discord_available:
                                 self.update_discord_status(current_track_name, 
@@ -140,26 +148,59 @@ class MusicTab(ttk.Frame):
         controls_frame = ttk.Frame(controls_container)
         controls_frame.pack(side=tk.LEFT, fill='y')
 
-        self.play_btn = ttk.Button(controls_frame, text="Phát", command=self.toggle_play)
+        basic_controls = ttk.Frame(controls_frame)
+        basic_controls.pack(side=tk.TOP, fill='x', pady=5)
+
+        self.play_btn = ttk.Button(basic_controls, text="Phát", command=self.toggle_play)
         self.play_btn.pack(side=tk.LEFT, padx=5)
-
-        ttk.Button(controls_frame, text="Dừng", command=self.stop_music).pack(side=tk.LEFT, padx=5)
-
+        
+        ttk.Button(basic_controls, text="Dừng", command=self.stop_music).pack(side=tk.LEFT, padx=5)
+        
         self.mode_btn = ttk.Button(
-            controls_frame,
+            basic_controls,
             text="🔁", 
             command=self.toggle_play_mode,
             width=3 
         )
         self.mode_btn.pack(side=tk.LEFT, padx=5)
-
+        
         self.discord_toggle_btn = ttk.Button(
-            controls_frame, 
+            basic_controls, 
             text="Tắt Discord", 
             command=self.toggle_discord_connection,
         )
         self.discord_toggle_btn.pack(side=tk.LEFT, padx=5)
-
+        
+        self.music_controls_btn = ttk.Button(
+            basic_controls,
+            text="Tùy chỉnh nhạc",
+            command=self.toggle_music_controls
+        )
+        self.music_controls_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.advanced_controls_frame = ttk.Frame(controls_frame)
+        
+        volume_frame = ttk.Frame(self.advanced_controls_frame)
+        volume_frame.pack(side=tk.TOP, fill='x', pady=5)
+        
+        ttk.Label(volume_frame, text="Âm lượng:").pack(side=tk.LEFT, padx=2)
+        
+        self.volume_scale = ttk.Scale(
+            volume_frame,
+            from_=0,
+            to=100,
+            orient=tk.HORIZONTAL
+        )
+        self.volume_scale.set(self.music_player.get_volume() * 100)
+        self.volume_scale.pack(side=tk.LEFT, fill='x', expand=True, padx=5)
+        self.volume_scale.bind("<ButtonRelease-1>", self.on_volume_change)
+        
+        time_frame = ttk.Frame(self.advanced_controls_frame)
+        time_frame.pack(side=tk.TOP, fill='x', pady=5)
+        
+        self.time_label = ttk.Label(time_frame, text="0:00 / 0:00")
+        self.time_label.pack(side=tk.LEFT, pady=2)
+        
         self.cover_image_label = ttk.Label(controls_container)
         self.cover_image_label.pack(side=tk.RIGHT, padx=10)
         
@@ -183,7 +224,6 @@ class MusicTab(ttk.Frame):
             ttk.Label(discord_frame, text="Trạng thái Discord:").grid(row=0, column=0, sticky='w')
             self.discord_status_label = ttk.Label(discord_frame, text="Đã kết nối")
             self.discord_status_label.grid(row=0, column=1, sticky='w', padx=5)
-
 
     def show_song_image(self, event):
         index = self.songs_listbox.nearest(event.y)
@@ -371,6 +411,11 @@ class MusicTab(ttk.Frame):
 
                 self.update_cover_image(song.get("image"))
                 
+                if self.music_controls_visible:
+                    current_time = "0:00"
+                    total_time = self.music_player.get_formatted_time(self.music_player.track_length)
+                    self.time_label.config(text=f"{current_time} / {total_time}")
+                
                 if self.discord_available:
                     self.update_discord_status(song["name"], song["beatmapset_id"])
             else:
@@ -415,10 +460,12 @@ class MusicTab(ttk.Frame):
         except Exception as e:
             print(f"Lỗi cập nhật Discord RPC: {e}")
 
-
     def on_close(self):
         if self.rpc:
             self.rpc.close()
+        
+        if self.progress_update_id:
+            self.after_cancel(self.progress_update_id)
     
     def toggle_play(self):
         if not self.music_player.current_track:
@@ -445,6 +492,9 @@ class MusicTab(ttk.Frame):
             self.play_btn.config(text="Phát")
             self.current_track_label.config(text="Không có bài nào")
             self.update_cover_image()
+            
+            if self.music_controls_visible:
+                self.time_label.config(text="0:00 / 0:00")
         
             if self.discord_available and self.rpc:
                 try:
@@ -454,7 +504,6 @@ class MusicTab(ttk.Frame):
                 except Exception as e:
                     print(f"Lỗi khi tắt Discord RPC: {e}")
 
-    
     def update_state(self):
         osu_path = self.app.get_osu_path()
         
@@ -476,3 +525,39 @@ class MusicTab(ttk.Frame):
     
     def notify_config_saved(self):
         self.update_state()
+
+    def update_progress_timer(self):
+        if self.music_player.playing and self.music_player.current_track and self.music_controls_visible:
+            current_pos, total_length = self.music_player.get_track_position()
+            
+            if current_pos < 0:
+                current_pos = 0
+                
+            if total_length > 0:
+                current_time = self.music_player.get_formatted_time(current_pos)
+                total_time = self.music_player.get_formatted_time(total_length)
+                self.time_label.config(text=f"{current_time} / {total_time}")
+        
+        self.progress_update_id = self.after(1000, self.update_progress_timer)
+    
+    def skip_forward(self):
+        if self.music_player.current_track:
+            self.music_player.skip_forward(5)
+    
+    def skip_backward(self):
+        if self.music_player.current_track:
+            self.music_player.skip_backward(5)
+
+    def on_volume_change(self, event):
+        volume = self.volume_scale.get() / 100.0
+        self.music_player.set_volume(volume)
+
+    def toggle_music_controls(self):
+        if self.music_controls_visible:
+            self.advanced_controls_frame.pack_forget()
+            self.music_controls_btn.config(text="Tùy chỉnh nhạc")
+            self.music_controls_visible = False
+        else:
+            self.advanced_controls_frame.pack(side=tk.TOP, fill='x', pady=5)
+            self.music_controls_btn.config(text="Ẩn tùy chỉnh")
+            self.music_controls_visible = True

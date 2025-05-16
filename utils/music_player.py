@@ -20,6 +20,9 @@ class MusicPlayer:
         self.filtered_songs = []
         self.current_index = -1
         self.shuffle_mode = False
+        self.track_length = 0
+        self.volume = 0.5
+        pygame.mixer.music.set_volume(self.volume)
         pygame.mixer.music.set_endevent(pygame.USEREVENT)
     
     def load_songs(self, osu_path):
@@ -96,6 +99,13 @@ class MusicPlayer:
             self.current_track = song
             self.current_index = index if index is not None else self.find_song_index(song)
             self.playing = True
+            
+            if song["path"].lower().endswith('.mp3'):
+                audio = MP3(song["path"])
+            else:
+                audio = OggVorbis(song["path"])
+            self.track_length = audio.info.length
+            
             return True, song["name"]
         except Exception as e:
             return False, str(e)
@@ -161,6 +171,79 @@ class MusicPlayer:
             if song["name"] == name:
                 return song
         return None
+    
+    def get_track_position(self):
+        """Return current position in seconds and total length in seconds"""
+        if not self.current_track:
+            return 0, 0
+        
+        current_pos = pygame.mixer.music.get_pos() / 1000 
+        
+        return current_pos, self.track_length
+    
+    def get_formatted_time(self, seconds):
+        """Convert seconds to MM:SS format"""
+        minutes = int(seconds // 60)
+        secs = int(seconds % 60)
+        return f"{minutes}:{secs:02d}"
+    
+    def seek(self, position):
+        """Seek to a position in the track (position is 0.0 to 1.0)"""
+        if not self.current_track or position < 0 or position > 1:
+            return False
+        
+        target_time = position * self.track_length
+        
+        try:
+            was_playing = self.playing
+            current_volume = self.volume
+            
+            pygame.mixer.music.set_volume(0.1)
+            
+            pygame.mixer.music.stop()
+            pygame.mixer.music.load(self.current_track["path"])
+            pygame.mixer.music.play(start=target_time)
+            
+            pygame.mixer.music.set_volume(current_volume)
+            
+            if not was_playing:
+                pygame.mixer.music.pause()
+            
+            self.playing = was_playing
+            return True
+        except Exception as e:
+            print(f"Error seeking: {e}")
+            return False
+    
+    def skip_forward(self, seconds=5):
+        """Skip forward by the specified number of seconds"""
+        if not self.current_track:
+            return False
+        
+        current_pos, total_length = self.get_track_position()
+        new_pos = min(current_pos + seconds, total_length) / total_length
+        return self.seek(new_pos)
+    
+    def skip_backward(self, seconds=5):
+        """Skip backward by the specified number of seconds"""
+        if not self.current_track:
+            return False
+        
+        current_pos, total_length = self.get_track_position()
+        new_pos = max(current_pos - seconds, 0) / total_length
+        return self.seek(new_pos)
+    
+    def set_volume(self, volume):
+        """Set volume between 0.0 and 1.0"""
+        if 0.0 <= volume <= 1.0:
+            self.volume = volume
+            pygame.mixer.music.set_volume(volume)
+            return True
+        return False
+    
+    def get_volume(self):
+        """Get current volume"""
+        return self.volume
     
     def __del__(self):
         try:
