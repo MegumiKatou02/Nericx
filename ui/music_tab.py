@@ -138,6 +138,7 @@ class MusicTab(ttk.Frame):
         self.songs_listbox.bind('<Button-1>', self.show_song_image)
         self.songs_listbox.bind('<Return>', self.play_selected_song)
         self.songs_listbox.bind("<Double-1>", self.play_selected_song)
+        self.songs_listbox.bind('<<ListboxSelect>>', self.show_song_image)
         
         player_frame = ttk.LabelFrame(self.main_frame, text="Trình phát")
         player_frame.pack(fill='x', padx=10, pady=10)
@@ -225,20 +226,18 @@ class MusicTab(ttk.Frame):
             self.discord_status_label = ttk.Label(discord_frame, text="Đã kết nối")
             self.discord_status_label.grid(row=0, column=1, sticky='w', padx=5)
 
-    def show_song_image(self, event):
-        index = self.songs_listbox.nearest(event.y)
-        
-        if 0 <= index < self.songs_listbox.size():
-            song_name = self.songs_listbox.get(index)
-            
-            song = None
-            for s in self.music_player.songs_data:
-                if s["name"] == song_name:
-                    song = s
-                    break
-            
-            if song and song.get("image"):
-                self.update_cover_image(song.get("image"))
+    def show_song_image(self, event=None):
+        selection = self.songs_listbox.curselection()
+        if not selection:
+            return
+        song_name = self.songs_listbox.get(selection[0])
+        song = None
+        for s in self.music_player.songs_data:
+            if s["name"] == song_name:
+                song = s
+                break
+        if song and song.get("image"):
+            self.update_cover_image(song.get("image"))
     
     def show_fullsize_image(self, image_path):
         if not image_path:
