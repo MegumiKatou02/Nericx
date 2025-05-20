@@ -19,6 +19,7 @@ class MusicPlayer:
         self.filtered_songs = []
         self.current_index = -1
         self.shuffle_mode = False
+        self.repeat_one = False
         self.track_length = 0
         self.volume = 0.5
         pygame.mixer.music.set_volume(self.volume)
@@ -74,12 +75,19 @@ class MusicPlayer:
                         seconds = duration % 60
                         duration_str = f"{minutes}:{seconds:02d}"
 
-                        song_name = f"{' '.join(song_folder.split(' ')[1:])} - {duration_str}"
+                        name_part = ' '.join(song_folder.split(' ')[1:])
+                        if ' - ' in name_part:
+                            artist, title_rest = name_part.split(' - ', 1)
+                        else:
+                            artist, title_rest = '', name_part
+                        song_name = f"{name_part} - {duration_str}"
                         self.songs_data.append({
                             "name": song_name,
                             "path": song_path,
                             "beatmapset_id": beatmapset_id,
-                            "image": image_path
+                            "image": image_path,
+                            "artist": artist.strip(),
+                            "title": title_rest.strip()
                         })
                 # sort
                 self.songs_data.sort(key=lambda song: song["name"].lower())
@@ -115,8 +123,9 @@ class MusicPlayer:
                 return i
         return -1
     
-    def set_playback_mode(self, shuffle=False):
+    def set_playback_mode(self, shuffle=False, repeat_one=False):
         self.shuffle_mode = shuffle
+        self.repeat_one = repeat_one
     
     def play_next(self):
         if not self.filtered_songs:
@@ -124,6 +133,9 @@ class MusicPlayer:
 
         if self.current_index == -1 and self.filtered_songs:
             self.current_index = 0
+        
+        if self.repeat_one and self.current_track:
+            return self.play_music(self.current_track, self.current_index)
         
         if not self.shuffle_mode:
             next_index = (self.current_index + 1) % len(self.filtered_songs)

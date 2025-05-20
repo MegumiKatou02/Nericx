@@ -17,6 +17,7 @@ class MusicTab(ttk.Frame):
         self.app = app
 
         self.shuffle_mode = False
+        self.repeat_one = False
         self.music_controls_visible = False
 
         self.music_player = MusicPlayer()
@@ -306,16 +307,25 @@ class MusicTab(ttk.Frame):
             self.cover_image_label.config(image='', text='Lỗi tải ảnh')
 
     def toggle_play_mode(self):
-        self.shuffle_mode = not self.shuffle_mode
-        
-        if self.shuffle_mode:
+        if not self.shuffle_mode and not self.repeat_one:
+            self.shuffle_mode = True
+            self.repeat_one = False
             self.mode_btn.config(text="🔀")
-            self.music_player.set_playback_mode(shuffle=True)
+            self.music_player.set_playback_mode(shuffle=True, repeat_one=False)
+            mode = "Trộn bài"
+        elif self.shuffle_mode:
+            self.shuffle_mode = False
+            self.repeat_one = True
+            self.mode_btn.config(text="🔂")
+            self.music_player.set_playback_mode(shuffle=False, repeat_one=True)
+            mode = "Lặp lại một bài"
         else:
+            self.shuffle_mode = False
+            self.repeat_one = False
             self.mode_btn.config(text="🔁")
-            self.music_player.set_playback_mode(shuffle=False)
+            self.music_player.set_playback_mode(shuffle=False, repeat_one=False)
+            mode = "Liên tục"
         
-        mode = "Trộn bài" if self.shuffle_mode else "Liên tục"
         self.current_track_label.config(text=f"Chế độ: {mode}", foreground="#43B581")
         self.after(2000, lambda: self.update_current_track_display())
 
@@ -370,7 +380,11 @@ class MusicTab(ttk.Frame):
         
         filtered_songs = []
         for song in self.music_player.songs_data:
-            if search_term in song["name"].lower():
+            if (
+                search_term in song["name"].lower() or
+                ("artist" in song and search_term in song["artist"].lower()) or
+                ("title" in song and search_term in song["title"].lower())
+            ):
                 self.songs_listbox.insert(tk.END, song["name"])
                 filtered_songs.append(song)
         
