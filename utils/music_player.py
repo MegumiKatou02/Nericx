@@ -104,7 +104,9 @@ class MusicPlayer:
             pygame.mixer.music.play()
             
             self.current_track = song
-            self.current_index = index if index is not None else self.find_song_index(song)
+            if index is None:
+                index = self.find_song_index(song)
+            self.current_index = index
             self.playing = True
             
             if song["path"].lower().endswith('.mp3'):
@@ -138,6 +140,8 @@ class MusicPlayer:
             return self.play_music(self.current_track, self.current_index)
         
         if not self.shuffle_mode:
+            if self.current_index >= len(self.filtered_songs):
+                self.current_index = 0
             next_index = (self.current_index + 1) % len(self.filtered_songs)
             next_song = self.filtered_songs[next_index]
             return self.play_music(next_song, next_index)

@@ -379,19 +379,31 @@ class MusicTab(ttk.Frame):
         self.songs_listbox.delete(0, tk.END)
         
         filtered_songs = []
-        for song in self.music_player.songs_data:
-            if (
-                search_term in song["name"].lower() or
-                ("artist" in song and search_term in song["artist"].lower()) or
-                ("title" in song and search_term in song["title"].lower())
-            ):
+        if not search_term:
+            filtered_songs = self.music_player.songs_data.copy()
+            for song in filtered_songs:
                 self.songs_listbox.insert(tk.END, song["name"])
-                filtered_songs.append(song)
+        else:
+            for song in self.music_player.songs_data:
+                if (
+                    search_term in song["name"].lower() or
+                    ("artist" in song and search_term in song["artist"].lower()) or
+                    ("title" in song and search_term in song["title"].lower())
+                ):
+                    self.songs_listbox.insert(tk.END, song["name"])
+                    filtered_songs.append(song)
         
         self.music_player.filtered_songs = filtered_songs
         
         if self.music_player.current_track:
             current_track_name = self.music_player.current_track["name"]
+            new_index = -1
+            for i, song in enumerate(filtered_songs):
+                if song["path"] == self.music_player.current_track["path"]:
+                    new_index = i
+                    break
+            self.music_player.current_index = new_index
+            
             for i, song_name in enumerate(self.songs_listbox.get(0, tk.END)):
                 if song_name == current_track_name:
                     self.songs_listbox.itemconfig(i, {'bg': '#7289DA', 'fg': 'white'})
