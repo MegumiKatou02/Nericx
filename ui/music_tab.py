@@ -375,6 +375,18 @@ class MusicTab(ttk.Frame):
                 self.songs_listbox.insert(tk.END, song["name"])
                 filtered_songs.append(song)
         
+        self.music_player.filtered_songs = filtered_songs
+        
+        if self.music_player.current_track:
+            current_track_name = self.music_player.current_track["name"]
+            for i, song_name in enumerate(self.songs_listbox.get(0, tk.END)):
+                if song_name == current_track_name:
+                    self.songs_listbox.itemconfig(i, {'bg': '#7289DA', 'fg': 'white'})
+                    if not current_selection_name:
+                        self.songs_listbox.selection_set(i)
+                        self.songs_listbox.see(i)
+                    break
+        
         if current_selection_name:
             for i, song_name in enumerate(self.songs_listbox.get(0, tk.END)):
                 if song_name == current_selection_name:

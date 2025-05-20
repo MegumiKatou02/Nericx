@@ -173,7 +173,6 @@ class MusicPlayer:
         return None
     
     def get_track_position(self):
-        """Return current position in seconds and total length in seconds"""
         if not self.current_track:
             return 0, 0
         
@@ -182,13 +181,11 @@ class MusicPlayer:
         return current_pos, self.track_length
     
     def get_formatted_time(self, seconds):
-        """Convert seconds to MM:SS format"""
         minutes = int(seconds // 60)
         secs = int(seconds % 60)
         return f"{minutes}:{secs:02d}"
     
     def seek(self, position):
-        """Seek to a position in the track (position is 0.0 to 1.0)"""
         if not self.current_track or position < 0 or position > 1:
             return False
         
@@ -216,7 +213,6 @@ class MusicPlayer:
             return False
     
     def skip_forward(self, seconds=5):
-        """Skip forward by the specified number of seconds"""
         if not self.current_track:
             return False
         
@@ -225,7 +221,6 @@ class MusicPlayer:
         return self.seek(new_pos)
     
     def skip_backward(self, seconds=5):
-        """Skip backward by the specified number of seconds"""
         if not self.current_track:
             return False
         
@@ -234,7 +229,6 @@ class MusicPlayer:
         return self.seek(new_pos)
     
     def set_volume(self, volume):
-        """Set volume between 0.0 and 1.0"""
         if 0.0 <= volume <= 1.0:
             self.volume = volume
             pygame.mixer.music.set_volume(volume)
@@ -242,7 +236,6 @@ class MusicPlayer:
         return False
     
     def get_volume(self):
-        """Get current volume"""
         return self.volume
     
     def __del__(self):
