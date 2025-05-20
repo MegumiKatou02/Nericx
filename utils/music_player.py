@@ -6,7 +6,6 @@ import random
 
 class MusicPlayer:
     def __init__(self):
-        # pygame.mixer.init()
         try:
             pygame.init() 
             pygame.mixer.init()
